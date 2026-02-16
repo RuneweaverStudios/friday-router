@@ -13,7 +13,7 @@ version: 1.7.0
 
 IntentRouter analyzes your tasks and directs them to the best LLM—MiniMax 2.5 for code, Kimi k2.5 for creative, Grok Fast for research. Eliminate guesswork; route with purpose.
 
-**Security improvements in v1.7.0:** Removed gateway auth token/password from router output. Gateway management and FACEPALM integration removed - use separate skills if needed.
+**Security improvements in v1.7.0:** Removed gateway auth token/password from router output. Gateway management removed - use [gateway-guard](https://clawhub.ai/skills/gateway-guard) skill separately. FACEPALM integration removed - use [FACEPALM](https://github.com/RuneweaverStudios/FACEPALM) skill separately.
 
 **Requirements:** **OpenRouter** — All model IDs use the `openrouter/...` prefix. Configure OpenClaw with an OpenRouter API key so one auth profile covers every tier.
 
