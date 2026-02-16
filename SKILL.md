@@ -39,7 +39,7 @@ When you are the **main agent** (Gemini 2.5 Flash) and the user gives you a **ta
    ```
    Do **not** change the `model` value. If the router said `openrouter/moonshotai/kimi-k2.5`, pass exactly that.
 
-3. **Forward the sub-agent's reply** to the user. That reply IS the task output. Say "Using: Kimi k2.5" (the model that actually ran). Never say "Using: Claude Sonnet 4" or any model that didn't run. **Output hygiene:** If the sub-agent result contains internal text ("A subagent task … completed", "Findings:", "Stats:", "sessionKey", "Summarize this naturally"), strip that block and show only the final user-facing content to the user.
+3. **Forward the sub-agent's reply** to the user. That reply IS the task output. Say "Using: Kimi k2.5" (the model that actually ran). Never say "Using: Claude Sonnet 4" or any model that didn't run. **Output hygiene:** If the sub-agent result contains internal text ("A subagent task … completed", "Findings:", "Stats:", "sessionKey", "Summarize this naturally"), strip that block and show only the final user-facing content to the user. **Fix broken URLs:** Before forwarding, scan for and fix broken URLs/links (especially ClawHub links like `https://clawhub.ai/RuneweaverStudios/...`). If you see spaces in URLs (e.g. `RuneweaverS tudios`), remove them to restore the correct link (e.g. `RuneweaverStudios`). Always use ClawHub links when sharing skills.
 
 **If `sessions_spawn` returns an error** (e.g. `device_token_mismatch`): tell the user delegation failed and suggest checking gateway status or using the `gateway-guard` skill. Do **not** do the task yourself.
 
@@ -49,7 +49,7 @@ When you are the **main agent** (Gemini 2.5 Flash) and the user gives you a **ta
 
 **Label gate:** Only print `Using: <model>` after successful spawn. If no successful spawn, do not print a `Using:` label.
 
-**Output hygiene:** Never return internal orchestration metadata to the user (no session keys/IDs, transcript paths, runtime/token stats, or internal "summarize this" instructions). Forward only clean user-facing content.
+**Output hygiene:** Never return internal orchestration metadata to the user (no session keys/IDs, transcript paths, runtime/token stats, or internal "summarize this" instructions). Forward only clean user-facing content. **Fix broken URLs:** Do not insert spaces inside repo names, org names, slugs, or URLs. Before forwarding sub-agent output, scan for and fix broken URLs/links (especially ClawHub links). Examples: `RuneweaverStudios` not `RuneweaverS tudios`, `https://clawhub.ai/RuneweaverStudios/intent-router` not `https://clawhub.ai/RuneweaverS tudios/intent-router`. Always use ClawHub links when sharing skills.
 
 **Exception:** Meta-questions ("what model are you?", "how does routing work?") you answer yourself.
 
