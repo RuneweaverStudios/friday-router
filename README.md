@@ -6,7 +6,7 @@
 
 IntentRouter is the intelligent LLM orchestration skill for OpenClaw. It precisely analyzes your tasks and directs them to the best LLM for the job—MiniMax 2.5 for code, Kimi k2.5 for creative prose, Grok Fast for web research. Route with purpose; stop wasting resources.
 
-**Security improvements in v1.7.0:** Removed gateway auth token/password exposure from router output. Gateway management functionality has been removed - use the separate `gateway-guard` skill if gateway auth management is needed. FACEPALM troubleshooting integration has been removed - use the separate `FACEPALM` skill if troubleshooting is needed.
+**Security improvements in v1.7.0:** Removed gateway auth token/password exposure from router output. Gateway management functionality has been removed - use the separate [gateway-guard](https://clawhub.ai/skills/gateway-guard) skill if gateway auth management is needed. FACEPALM troubleshooting integration has been removed - use the separate [FACEPALM](https://github.com/RuneweaverStudios/FACEPALM) skill if troubleshooting is needed.
 
 ## Requirements
 
@@ -45,7 +45,6 @@ router: {"task":"write a poem","model":"openrouter/moonshotai/kimi-k2.5","sessio
 npm install -g clawhub
 clawhub install friday-router
 
-python3 workspace/skills/gateway-guard/scripts/gateway_guard.py status --json
 python scripts/router.py default
 python scripts/router.py classify "your task description"
 ```
@@ -128,6 +127,26 @@ cost = router.estimate_cost("design landing page")         # → {tier, model, c
 - **Agentic** tasks (multi-step) are bumped to at least CODE.
 
 ---
+
+---
+
+## Changelog
+
+### v1.7.0 (Security-focused release)
+
+**Removed functionality (for improved security rating):**
+- **Gateway guard integration** — Removed `gateway_watchdog.py` and gateway auth management functionality. Use the separate [gateway-guard](https://clawhub.ai/skills/gateway-guard) skill for gateway auth checking and management.
+- **Gateway auth secret exposure** — Removed `get_openclaw_gateway_config()` function that exposed gateway tokens/passwords in router output. Router spawn output no longer includes `gatewayToken`, `gatewayPassword`, `gatewayAuthMode`, or `gatewayPort`.
+- **FACEPALM troubleshooting integration** — Removed troubleshooting loop detection and automatic FACEPALM invocation. Use the separate [FACEPALM](https://github.com/RuneweaverStudios/FACEPALM) skill if intelligent troubleshooting is needed.
+
+**Security improvements:**
+- Router now only handles model routing with no credential exposure
+- No process management capabilities (no gateway restart/kill operations)
+- Clean separation of concerns: routing vs. gateway management vs. troubleshooting
+
+**Migration:**
+- If you need gateway auth management: `clawhub install gateway-guard`
+- If you need troubleshooting: Install [FACEPALM](https://github.com/RuneweaverStudios/FACEPALM) separately
 
 ---
 
