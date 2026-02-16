@@ -20,11 +20,8 @@ import json
 import math
 import os
 import re
-import subprocess
 import sys
 from pathlib import Path
-from datetime import datetime, timezone, timedelta
-from collections import defaultdict
 
 # OpenClaw imports (if available)
 try:
@@ -34,38 +31,8 @@ except ImportError:
     HAS_OPENCLAW = False
 
 
-def get_openclaw_gateway_config():
-    """
-    Read gateway auth and port from openclaw.json every time.
-    Returns dict with gatewayPort and auth secret:
-    - gatewayToken when gateway.auth.mode == "token"
-    - gatewayPassword when gateway.auth.mode == "password"
-    """
-    openclaw_home = os.environ.get('OPENCLAW_HOME') or os.path.expanduser('~/.openclaw')
-    config_path = Path(openclaw_home) / 'openclaw.json'
-    if not config_path.exists():
-        return {}
-    try:
-        with open(config_path, 'r') as f:
-            data = json.load(f)
-    except (json.JSONDecodeError, OSError):
-        return {}
-    gateway = data.get('gateway') or {}
-    auth = gateway.get('auth') or {}
-    auth_mode = auth.get('mode')
-    token = auth.get('token') if auth_mode == 'token' else None
-    password = auth.get('password') if auth_mode == 'password' else None
-    port = gateway.get('port')
-    out = {}
-    if token:
-        out['gatewayToken'] = token
-    if password:
-        out['gatewayPassword'] = password
-    if auth_mode in ('token', 'password'):
-        out['gatewayAuthMode'] = auth_mode
-    if port is not None:
-        out['gatewayPort'] = int(port)
-    return out
+# Removed get_openclaw_gateway_config() - gateway auth secrets should not be exposed in router output
+# Use gateway-guard skill separately if gateway auth management is needed
 
 
 class FridayRouter:
@@ -132,11 +99,8 @@ class FridayRouter:
         self.config_path = Path(config_path)
         self.config = self._load_config()
         
-        # Troubleshooting loop detection state
-        self.openclaw_home = Path(os.environ.get('OPENCLAW_HOME', str(Path.home() / '.openclaw')))
-        self.gateway_log = self.openclaw_home / 'logs' / 'gateway.log'
-        self.recent_errors = defaultdict(int)  # error_pattern -> count
-        self.recent_tasks = []  # List of recent tasks (last 5 minutes)
+        # Removed troubleshooting loop detection and FACEPALM integration
+        # Use FACEPALM skill separately if troubleshooting is needed
     
     def _load_config(self):
         """Load and parse configuration file."""
@@ -342,131 +306,15 @@ class FridayRouter:
             'currency': 'USD'
         }
     
-    def _detect_troubleshooting_loop(self, task):
-        """
-        Detect if we're in a troubleshooting loop by checking:
-        1. Recent errors in gateway.log (same error appearing 3+ times)
-        2. Recent failed tasks (same task attempted 2+ times)
-        3. Error patterns repeating
-        """
-        # Check recent gateway.log for repeated errors
-        if self.gateway_log.exists():
-            try:
-                with open(self.gateway_log, 'r') as f:
-                    lines = f.readlines()
-                
-                # Look at last 200 lines
-                recent_lines = lines[-200:]
-                error_patterns = defaultdict(int)
-                
-                # Common error patterns
-                error_keywords = [
-                    'error', 'failed', 'exception', 'traceback', 'unhandled',
-                    'device_token_mismatch', 'unauthorized', 'timeout',
-                    'connection refused', 'socket error'
-                ]
-                
-                for line in recent_lines:
-                    line_lower = line.lower()
-                    for keyword in error_keywords:
-                        if keyword in line_lower:
-                            # Extract error pattern (first 100 chars of error line)
-                            pattern = line.strip()[:100]
-                            error_patterns[pattern] += 1
-                
-                # Check if any error pattern appears 3+ times (troubleshooting loop)
-                for pattern, count in error_patterns.items():
-                    if count >= 3:
-                        return True, f"Repeated error detected: {pattern[:50]}... ({count} times)"
-            except (OSError, IOError):
-                pass
-        
-        # Check if same task was attempted recently
-        cutoff = datetime.now(timezone.utc) - timedelta(minutes=5)
-        task_normalized = task.lower().strip()
-        
-        # Simple check: if task contains troubleshooting keywords and was attempted before
-        troubleshooting_keywords = ['fix', 'debug', 'error', 'issue', 'problem', 'troubleshoot']
-        if any(kw in task_normalized for kw in troubleshooting_keywords):
-            # Check recent tasks (stored in memory for this session)
-            similar_tasks = [t for t in self.recent_tasks if abs((task_normalized.count(' ') - t.count(' '))) <= 2]
-            if len(similar_tasks) >= 2:
-                return True, f"Similar troubleshooting task attempted {len(similar_tasks)} times recently"
-        
-        return False, None
-    
-    def _invoke_facepalm(self):
-        """Invoke FACEPALM skill to troubleshoot."""
-        facepalm_script = self.openclaw_home / 'workspace' / 'skills' / 'FACEPALM' / 'scripts' / 'facepalm.py'
-        
-        if not facepalm_script.exists():
-            return None, "FACEPALM script not found"
-        
-        try:
-            result = subprocess.run(
-                [sys.executable, str(facepalm_script), '--minutes', '5', '--json'],
-                capture_output=True,
-                text=True,
-                timeout=180,  # 3 minutes for FACEPALM + Codex
-                cwd=str(self.openclaw_home),
-                env={**os.environ, 'OPENCLAW_HOME': str(self.openclaw_home)}
-            )
-            
-            if result.returncode == 0:
-                try:
-                    diagnosis = json.loads(result.stdout)
-                    return diagnosis, None
-                except json.JSONDecodeError:
-                    # If not JSON, return as text
-                    return {'diagnosis': result.stdout, 'raw_output': True}, None
-            else:
-                return None, f"FACEPALM error: {result.stderr or result.stdout}"
-        except subprocess.TimeoutExpired:
-            return None, "FACEPALM timeout"
-        except Exception as e:
-            return None, f"FACEPALM exception: {str(e)}"
-    
     def spawn_agent(self, task, session_target='isolated', label=None):
         """Spawn an OpenClaw sub-agent with the appropriate model."""
-        # Check for troubleshooting loop before spawning
-        is_loop, loop_reason = self._detect_troubleshooting_loop(task)
-        
-        if is_loop:
-            # Invoke FACEPALM
-            diagnosis, error = self._invoke_facepalm()
-            
-            if diagnosis:
-                # Return FACEPALM diagnosis instead of normal spawn
-                return {
-                    'params': {
-                        'task': f"FACEPALM Diagnosis: {loop_reason}\n\n{diagnosis.get('diagnosis', str(diagnosis))}",
-                        'model': 'openrouter/openai/gpt-5.3-codex',  # Use Codex for troubleshooting
-                        'sessionTarget': session_target,
-                        'facepalm_invoked': True
-                    },
-                    'recommendation': {
-                        'tier': 'CODE',
-                        'model': {'id': 'openrouter/openai/gpt-5.3-codex', 'alias': 'Codex-5.3'},
-                        'facepalm_diagnosis': diagnosis
-                    }
-                }
-            else:
-                # If FACEPALM failed, still proceed but log the issue
-                print(f"Warning: Troubleshooting loop detected but FACEPALM failed: {error}", file=sys.stderr)
-        
-        # Normal routing
         recommendation = self.recommend_model(task)
         model = recommendation['model']
         
         if not model:
             raise ValueError(f"No model found for tier: {recommendation['tier']}")
         
-        # Track this task
-        self.recent_tasks.append(task.lower().strip())
-        # Keep only last 10 tasks
-        self.recent_tasks = self.recent_tasks[-10:]
-        
-        # Build the spawn params
+        # Build the spawn params (no gateway auth secrets)
         params = {
             'task': task,
             'model': model['id'],
@@ -485,7 +333,7 @@ class FridayRouter:
 def main():
     """CLI entry point."""
     if len(sys.argv) < 2:
-        print("OpenRouterRouter | Codename: Centipede v1.5.0")
+        print("OpenRouterRouter | Codename: Centipede v1.7.0")
         print("\nUsage:")
         print("  router.py default                Show session default model (capable by default)")
         print("  router.py classify <task>       Classify task and recommend model")
@@ -577,10 +425,8 @@ def main():
         
         if output_json:
             # Machine-readable: single JSON object for sessions_spawn
+            # Note: Gateway auth secrets are NOT included - use gateway-guard skill separately if needed
             out = {k: v for k, v in result['params'].items()}
-            # Include gateway token/port from openclaw.json every time so client uses correct token
-            gateway_config = get_openclaw_gateway_config()
-            out.update(gateway_config)
             print(json.dumps(out))
         else:
             print(f"📋 Task: {task}")

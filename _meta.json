@@ -1,7 +1,7 @@
 {
   "schema": "openclaw.skill.v1",
   "name": "friday-router",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "displayName": "IntentRouter",
   "slogan": "Your AI's Smart Traffic Director: Precisely Matching Your OpenClaw Tasks to the Perfect LLM.",
   "description": "Optimize your OpenClaw agents' performance with IntentRouter, the intelligent LLM orchestration skill. This powerful tool precisely analyzes your tasks and directs them to the best LLM for the job—whether it's MiniMax 2.5 for code, Kimi k2.5 for creative prose, or Grok Fast for deep dives into web research. IntentRouter eliminates guesswork, ensuring your agents achieve faster, more accurate, and more cost-effective results by aligning every task with the right AI expert. Upgrade your OpenClaw ecosystem into a high-efficiency powerhouse, allowing IntentRouter to manage the intelligent dispatch of your models. Stop wasting resources and start routing with purpose!",
