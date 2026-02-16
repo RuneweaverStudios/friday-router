@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 OpenRouterRouter | Codename: Centipede (friday-router skill)
-Version 1.5.0
+Version 1.7.0
 
 Fixed bugs from original intelligent-router:
 - Simple indicators now properly invert (high match = SIMPLE, not complex)

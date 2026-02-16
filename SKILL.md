@@ -17,6 +17,8 @@ IntentRouter analyzes your tasks and directs them to the best LLM—MiniMax 2.5 
 
 **Requirements:** **OpenRouter** — All model IDs use the `openrouter/...` prefix. Configure OpenClaw with an OpenRouter API key so one auth profile covers every tier.
 
+**Config access:** This skill reads ONLY its own `config.json` file (located in the skill directory) for model configuration and routing rules. It does NOT read `openclaw.json`, does NOT access gateway tokens/passwords, and does NOT perform any gateway management operations. Router output contains only: `task`, `model`, `sessionTarget`, and optional `label` — no secrets or credentials.
+
 **Default / orchestrator model:** Gemini 2.5 Flash (`openrouter/google/gemini-2.5-flash`) — fast, cheap, reliable at tool-calling. The router delegates tasks to tier-specific sub-agents (Kimi for creative, MiniMax 2.5 for code, etc.).
 
 ## Orchestrator flow (mandatory for task requests)
@@ -39,7 +41,7 @@ When you are the **main agent** (Gemini 2.5 Flash) and the user gives you a **ta
 
 3. **Forward the sub-agent's reply** to the user. That reply IS the task output. Say "Using: Kimi k2.5" (the model that actually ran). Never say "Using: Claude Sonnet 4" or any model that didn't run. **Output hygiene:** If the sub-agent result contains internal text ("A subagent task … completed", "Findings:", "Stats:", "sessionKey", "Summarize this naturally"), strip that block and show only the final user-facing content to the user.
 
-**If `sessions_spawn` returns an error** (e.g. `device_token_mismatch`): tell the user delegation failed and suggest restarting the gateway (`openclaw gateway stop && openclaw gateway`). Do **not** do the task yourself.
+**If `sessions_spawn` returns an error** (e.g. `device_token_mismatch`): tell the user delegation failed and suggest checking gateway status or using the `gateway-guard` skill. Do **not** do the task yourself.
 
 **Hard-stop rule:** If `sessions_spawn` fails or is skipped, return only the delegation error and next-step fix. Do not write the requested output directly.
 
