@@ -1,17 +1,19 @@
 ---
 name: friday-router
 displayName: IntentRouter
-description: Your AI's Smart Traffic Director—precisely matching OpenClaw tasks to the perfect LLM. Intelligent orchestration with gateway guard, watchdog, OpenRouter.
-version: 1.5.0
+description: Your AI's Smart Traffic Director—precisely matching OpenClaw tasks to the perfect LLM. Intelligent orchestration with gateway guard, watchdog, OpenRouter, FACEPALM troubleshooting.
+version: 1.6.0
 ---
 
 # IntentRouter
 
 **Your AI's Smart Traffic Director: Precisely Matching Your OpenClaw Tasks to the Perfect LLM.**
 
-**v1.5.0 — Critical stable release.** Gateway guard, watchdog, COMPLEX tier, absolute paths. Tested and working with OpenClaw TUI delegation.
+**v1.6.0 — Critical stable release.** Gateway guard, watchdog, COMPLEX tier, absolute paths, **FACEPALM troubleshooting integration**. Tested and working with OpenClaw TUI delegation.
 
 IntentRouter analyzes your tasks and directs them to the best LLM—MiniMax 2.5 for code, Kimi k2.5 for creative, Grok Fast for research. Eliminate guesswork; route with purpose.
+
+**New in v1.6.0:** Automatic troubleshooting loop detection and FACEPALM integration. When IntentRouter detects repeated errors or failed troubleshooting attempts, it automatically invokes FACEPALM to analyze console logs and chat history using Codex 5.3.
 
 **Requirements:** **OpenRouter** — All model IDs use the `openrouter/...` prefix. Configure OpenClaw with an OpenRouter API key so one auth profile covers every tier.
 
@@ -48,6 +50,8 @@ When you are the **main agent** (Gemini 2.5 Flash) and the user gives you a **ta
 **Output hygiene:** Never return internal orchestration metadata to the user (no session keys/IDs, transcript paths, runtime/token stats, or internal "summarize this" instructions). Forward only clean user-facing content.
 
 **Exception:** Meta-questions ("what model are you?", "how does routing work?") you answer yourself.
+
+**Troubleshooting loop detection:** Before routing, IntentRouter checks for troubleshooting loops (repeated errors in `gateway.log` or repeated troubleshooting tasks). If detected, it automatically invokes FACEPALM, which analyzes logs and chat history using Codex 5.3 and returns intelligent diagnosis instead of normal routing. Install FACEPALM skill for this feature: `git clone https://github.com/RuneweaverStudios/FACEPALM.git ~/.openclaw/workspace/skills/FACEPALM`
 
 ## Model Selection (Austin's Prefs)
 
@@ -116,3 +120,24 @@ router output: {"task":"research best LLMs","model":"openrouter/x-ai/grok-4.1-fa
 | Vision tasks misclassified | Vision keywords now take priority over other classifications |
 | Code keywords not detected | Added React, JWT, API, and other common code terms |
 | Confidence always low | Now varies appropriately based on keyword match strength |
+
+## Troubleshooting Loop Detection & FACEPALM
+
+**v1.6.0 feature:** IntentRouter automatically detects troubleshooting loops and invokes [FACEPALM](https://github.com/RuneweaverStudios/FACEPALM) for intelligent diagnosis.
+
+**Detection triggers:**
+- Repeated errors: Same error pattern appears 3+ times in `gateway.log`
+- Repeated tasks: Similar troubleshooting tasks attempted multiple times
+
+**When detected:**
+1. IntentRouter automatically invokes FACEPALM
+2. FACEPALM crosschecks `gateway.log` with chat history (last 5 minutes)
+3. Uses Codex 5.3 (`openrouter/openai/gpt-5.3-codex`) for troubleshooting
+4. Returns diagnosis with root cause analysis and fixes
+
+**Install FACEPALM:**
+```bash
+git clone https://github.com/RuneweaverStudios/FACEPALM.git ~/.openclaw/workspace/skills/FACEPALM
+```
+
+Or via ClawHub (when published): `clawhub install FACEPALM`
