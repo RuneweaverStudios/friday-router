@@ -1,300 +1,230 @@
-# Friday Router - Multi-Model Routing Agent
+# Friday Router v2.0 - Parallel Execution
 
-## Overview
-
-Friday Router is an intelligent task routing system that automatically classifies task complexity and routes them to the most appropriate GLM model via OpenRouter.
-
-**New in v2.0:** Model transparency and contextual follow-up questions!
-
-## Features
-
-### 🔄 Model Transparency
-Every routed task shows the complete model selection path:
-- Triage model (complexity classification)
-- Orchestrator model (execution planning)
-- Sub-agent model (task execution)
-
-### 💬 Follow-up Questions
-Optional `--follow-up` flag generates contextual follow-up questions based on:
-- Task type and complexity
-- Conversation context
-- Related topics worth exploring
+**Intelligent multi-model routing with parallel fast + smart agents**
 
 ## Architecture
 
 ```
-┌─────────────┐
-│   Task In   │
-└──────┬──────┘
-       │
-       ▼
-┌─────────────────┐
-│  GLM 4.7 Flash  │  TRIAGE
-│  (Fast Class.)  │  Classify: simple/medium/complex
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│   GLM 5.0       │  ORCHESTRATOR
-│   (Router)      │  Select model + configure
-└────────┬────────┘
-         │
-    ┌────┴────┬─────────┐
-    ▼         ▼         ▼
-┌───────┐ ┌────────┐ ┌────────┐
-│ Flash │ │ GLM 4  │ │ GLM 5  │
-│(simple│ │(medium)│ │(complex)│
-└───────┘ └────────┘ └────────┘
+User Prompt (enters once)
+    ↓
+┌─────────────────────────────────────────────────────┐
+│  PARALLEL EXECUTION (both start immediately)        │
+│                                                     │
+│  Fast Agent              Smart Agent                │
+│  ⚡ Streams NOW           🧠 Thinks DEEP             │
+│  ↓                       ↓                          │
+│  Immediate response      Orchestrates subtasks      │
+│  user sees first         with more fast agents      │
+│                                                     │
+│  [User can read fast     [Background processing]    │
+│   response immediately]                             │
+└─────────────────────────────────────────────────────┘
 ```
 
-## Models Used
+## API Detection (Automatic)
 
-- **Triage**: `inception/mercury-2` - Ultra-fast, free classification
-- **Orchestrator**: `z-ai/glm-5` - Smart routing decisions
-- **Simple Tasks**: `z-ai/glm-4.7-flash` - Quick responses
-- **Medium Tasks**: `z-ai/glm-4.7` - Balanced performance
-- **Complex Tasks**: `z-ai/glm-5` - Maximum capability
-- **Fallback**: `inception/mercury-2` - Used on rate limits (429)
+Friday detects your API from environment variables (priority order):
 
-## Task Complexity Classification
-
-### Simple (Flash)
-- Definitions, basic questions
-- Simple conversions
-- Quick lookups
-- Single-step operations
-- **Max tokens**: 500
-- **Typical time**: <1s
-
-### Medium (GLM 4)
-- Explanations with examples
-- Comparisons
-- Summaries
-- Code reviews
-- Multi-step analysis
-- **Max tokens**: 2000
-- **Typical time**: 2-5s
-
-### Complex (GLM 5)
-- Architecture design
-- Implementation from scratch
-- Complex refactoring
-- Multi-component systems
-- Deep analysis
-- **Max tokens**: 4000
-- **Typical time**: 5-15s
+| Provider | Env Variable | Fast Model | Smart Model |
+|----------|--------------|------------|-------------|
+| **ZAI** | `ZAI_API_KEY` | GLM 4.7 Flash (free) | GLM 5 |
+| **Google** | `GOOGLE_API_KEY` | Gemini 2.0 Flash | Gemini 2.0 Pro |
+| **Anthropic** | `ANTHROPIC_API_KEY` | Claude 3.5 Haiku | Claude 3.5 Sonnet |
+| **OpenRouter** | `OPENROUTER_API_KEY` | Mercury-2 (free) | GLM 5 |
 
 ## Usage
 
-### CLI
 ```bash
-# Direct task with model transparency
-node scripts/route.mjs "What is machine learning?"
+# Basic usage (auto-detects API)
+node scripts/route.mjs "Your task"
 
-# With follow-up question
-node scripts/route.mjs "Explain React hooks" --follow-up
+# Verbose mode (see both agents)
+node scripts/route.mjs "Explain React hooks" --verbose
 
-# With context
-node scripts/route.mjs "Explain React hooks" --context "frontend developer"
+# JSON output
+node scripts/route.mjs "Build an API" --json
 
-# With file
-node scripts/route.mjs "Review this code" --file ./code.js
-
-# Debug mode (shows all stages)
-node scripts/route.mjs "Build an API" --debug
+# Test
+./test-v2.sh
 ```
 
-### Example Output with Model Transparency
-```
-🔄 Routing Decision:
-  Triage: z-ai/glm-4.7-flash (complexity: medium)
-  Orchestrator: z-ai/glm-5
-  Sub-agent: z-ai/glm-5
+## How It Works
 
-✅ Task dispatched to GLM 5
+### 1. Fast Agent (Immediate)
+- **Purpose**: Give user something to read immediately
+- **Model**: Fastest available (Haiku/Flash/Mercury)
+- **Behavior**: Streams response token-by-token
+- **User sees**: Answer within 100-500ms
 
-[Response content...]
+### 2. Smart Agent (Background)
+- **Purpose**: Deep analysis + orchestration
+- **Model**: Most capable (Opus/Gemini Pro/GLM 5)
+- **Behavior**: 
+  - Analyzes task complexity
+  - Spawns 0-4 fast sub-agents if needed
+  - Aggregates results
+  - Provides comprehensive answer
+- **User sees**: Enriched response after 2-10s
 
-💬 Want me to show you some React hooks examples?
-```
+## Parallel Execution
 
-### Programmatic
-```javascript
-import { routeTask } from './scripts/route.mjs';
-
-const result = await routeTask({
-  task: "Build a REST API",
-  context: "Node.js backend",
-  files: ["./server.js"]
-});
-
-console.log(result);
-// {
-//   response: "...",
-//   metadata: {
-//     complexity: "complex",
-//     model: "z-ai/glm-5",
-//     tokens: { input: 150, output: 1200 },
-//     time: 8423
-//   }
-// }
-```
-
-## Response Format
-
-All responses include:
+Both agents start **simultaneously**:
 
 ```javascript
-{
-  response: string,          // The actual response
-  metadata: {
-    complexity: "simple" | "medium" | "complex",
-    model: string,           // Model used
-    tokens: {
-      input: number,
-      output: number
-    },
-    time: number,            // Total time in ms
-    retries: number,         // Retry attempts
-    routing_path: string[]   // ["triage", "orchestrator", "agent"]
-  }
-}
+// Both spawn at the same time
+const fastAgent = spawn('node', ['call-api.mjs', task, 'fast']);
+const smartAgent = spawn('node', ['call-api.mjs', task, 'smart']);
+
+// Fast streams immediately
+fastAgent.stdout.pipe(process.stdout);
+
+// Smart works in background
+smartAgent.stdout.on('data', collect);
 ```
 
-## CLI Options
+## Model Selection
 
-| Flag | Description |
-|------|-------------|
-| `--stream` | Stream the final answer token-by-token |
-| `--raw` | Output structured JSON (for piping) |
-| `--stdin` | Read task from stdin |
-| `--skip-triage` | Treat as medium complexity |
-| `--force-simple` | Skip triage + orchestrate, answer directly |
-| `--debug` | Show all intermediate pipeline outputs |
-| `--follow-up` | Generate contextual follow-up question |
+### Fast Models (Speed priority)
+- **ZAI**: `glm-4-flash` (free tier)
+- **Google**: `gemini-2.0-flash-exp` (fastest)
+- **Anthropic**: `claude-3-5-haiku-20241022` (instant)
+- **OpenRouter**: `inception/mercury-2` (free)
 
-## Error Handling
-
-- **Automatic retries**: Up to 3 attempts with exponential backoff
-- **Fallback model**: If rate limited (429), automatically switches to `inception/mercury-2`
-- **Timeout protection**: 60s max per request
-- **Error metadata**: Full error details in response
-
-## Configuration
-
-Edit `config.json` to customize:
-
-```json
-{
-  "complexity_thresholds": {
-    "simple": {
-      "max_tokens": 500,
-      "keywords": ["define", "what is"],
-      "max_steps": 1
-    }
-  },
-  "routing": {
-    "max_retries": 3,
-    "timeout_ms": 60000,
-    "fallback_model": "zhipu/glm-4-flash"
-  }
-}
-```
-
-## Environment Variables
-
-Required:
-```bash
-OPENROUTER_API_KEY=sk-or-v1-...
-```
-
-Optional:
-```bash
-TRIAGE_MODEL=z-ai/glm-4.7-flash     # Override triage model
-ORCHESTRATOR_MODEL=z-ai/glm-5       # Override orchestrator model
-DISPATCH_MODEL=z-ai/glm-5           # Override dispatch model
-FRIDAY_LOG_LEVEL=debug              # Logging level
-FRIDAY_TIMEOUT=30000                # Override timeout
-```
+### Smart Models (Quality priority)
+- **ZAI**: `glm-5` (advanced reasoning)
+- **Google**: `gemini-exp-1206` (deep thinking)
+- **Anthropic**: `claude-3-5-sonnet-20241022` (balanced)
+- **OpenRouter**: `zai/glm-5` (via OpenRouter)
 
 ## Examples
 
-### Simple Task
 ```bash
-$ node scripts/route.mjs "Define API"
+# Simple question (fast model sufficient)
+node route.mjs "What is 2+2?"
+# → Fast: "4"
+# → Smart: (working in background, enriches if needed)
 
-🔄 Routing Decision:
-  Triage: z-ai/glm-4.7-flash (complexity: simple)
-  Orchestrator: z-ai/glm-5
-  Sub-agent: z-ai/glm-4.7-flash
+# Medium task (smart model orchestrates)
+node route.mjs "Explain React hooks"
+# → Fast: Quick explanation (user reads immediately)
+# → Smart: Detailed explanation with examples
 
-✅ Task dispatched to GLM 4.7 Flash
-
-Response: "API stands for Application Programming Interface..."
+# Complex task (smart spawns subtasks)
+node route.mjs "Build a REST API with authentication"
+# → Fast: High-level overview
+# → Smart: Architecture + spawns:
+#   - Research best practices
+#   - Design auth flow
+#   - Plan endpoints
+#   - Generate code examples
 ```
 
-### Medium Task with Follow-up
-```bash
-$ node scripts/route.mjs "Compare REST vs GraphQL" --follow-up
+## Configuration
 
-🔄 Routing Decision:
-  Triage: z-ai/glm-4.7-flash (complexity: medium)
-  Orchestrator: z-ai/glm-5
-  Sub-agent: z-ai/glm-4.7
-
-✅ Task dispatched to GLM 4.7
-
-Response: "REST and GraphQL are both API design approaches..."
-
-💬 Want me to show you code examples for both?
-```
-
-### Complex Task
-```bash
-$ node scripts/route.mjs "Design a microservices architecture for an e-commerce platform"
-
-🔄 Routing Decision:
-  Triage: z-ai/glm-4.7-flash (complexity: complex)
-  Orchestrator: z-ai/glm-5
-  Sub-agent: z-ai/glm-5
-
-✅ Task dispatched to GLM 5
-
-Response: "For an e-commerce microservices architecture..."
-```
-
-## Performance Optimization
-
-- **Triage caching**: Similar tasks skip re-classification
-- **Parallel routing**: Orchestrator preps while triage finishes
-- **Model warmup**: Maintains connection pools
-- **Smart batching**: Groups similar tasks
-
-## Monitoring
-
-Enable logging to track:
-- Routing decisions
-- Model performance
-- Error rates
-- Token usage
+### Environment Variables
 
 ```bash
-FRIDAY_LOG_LEVEL=debug node scripts/route.mjs "task"
+# Priority order (first found wins)
+export ZAI_API_KEY="..."          # Recommended (cheapest)
+export GOOGLE_API_KEY="..."
+export ANTHROPIC_API_KEY="..."
+export OPENROUTER_API_KEY="..."
+
+# Optional
+export FRIDAY_TIMEOUT_MS="60000"  # Default: 60s
 ```
 
-## Integration with Other Skills
+### Custom Models
 
-Friday Router works well with:
-- **brain**: Store routing patterns for learning
-- **smart-compact**: Efficient context management
-- **orchestrator**: Delegate to other agents
+Override via environment:
 
-## Future Enhancements
+```bash
+export FRIDAY_FAST_MODEL="custom-model-id"
+export FRIDAY_SMART_MODEL="custom-model-id"
+```
 
-- [x] Model transparency in routing output
-- [x] Contextual follow-up questions
-- [ ] Learn from past routing decisions
-- [ ] Cost optimization (prefer cheaper models)
-- [ ] A/B testing different models
-- [ ] Streaming responses
-- [ ] Batch processing mode
+## Files
+
+```
+scripts/
+├── route.mjs         # Main entry point (parallel execution)
+├── call-api.mjs      # API caller (handles all providers)
+├── detect-api.mjs    # Auto-detect provider from env
+└── friday.mjs        # Alternative entry with verbose output
+
+config.json           # Model mappings
+test-v2.sh           # Quick test script
+```
+
+## Comparison to v1
+
+| Feature | v1 (Sequential) | v2 (Parallel) |
+|---------|----------------|---------------|
+| **Response time** | 2-5s (wait for triage) | 100-500ms (immediate) |
+| **User experience** | Waits, then sees answer | Reads immediately |
+| **Triage** | Sequential step | Runs in parallel |
+| **API detection** | Manual config | Automatic |
+| **Provider support** | OpenRouter only | ZAI/Google/Anthropic/OR |
+
+## Benefits
+
+1. **Immediate feedback** - User sees response in 100-500ms
+2. **Deep analysis** - Smart model thinks in background
+3. **Auto-detection** - No config needed
+4. **Cost optimization** - Uses your cheapest API
+5. **Graceful degradation** - Falls back if smart fails
+
+## Testing
+
+```bash
+# Quick test
+./test-v2.sh
+
+# Manual test
+node scripts/route.mjs "What is machine learning?" --verbose
+```
+
+## Cost Comparison
+
+| Provider | Fast Model | Smart Model | Cost per 1K calls |
+|----------|------------|-------------|-------------------|
+| **ZAI** | Free tier | Membership | ~$0 (membership) |
+| **Google** | $0.001 | $0.007 | ~$8 |
+| **Anthropic** | $0.025 | $0.15 | ~$175 |
+| **OpenRouter** | Free | $0.001 | ~$1 |
+
+**Recommendation**: Use ZAI API for best value.
+
+## Troubleshooting
+
+**No API key detected:**
+```bash
+# Set your API key
+export ZAI_API_KEY="your-key-here"
+
+# Verify
+node scripts/detect-api.mjs
+```
+
+**Timeout errors:**
+```bash
+# Increase timeout
+export FRIDAY_TIMEOUT_MS="120000"  # 2 minutes
+```
+
+**Rate limits:**
+- ZAI has generous rate limits
+- OpenRouter can hit 429s on free models
+- Anthropic/Google have pay-per-use limits
+
+## License
+
+MIT
+
+## Author
+
+Ghost Malone 👻
+
+---
+
+**Friday Router v2.0 - Because waiting is for robots.**

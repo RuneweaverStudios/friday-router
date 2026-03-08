@@ -1,41 +1,79 @@
 {
   "name": "friday-router",
-  "version": "1.2.0",
-  "description": "Multi-model routing agent with intelligent task classification and fallback support",
-  "models": {
-    "triage": "inception/mercury-2",
-    "orchestrator": "z-ai/glm-5",
-    "agents": {
-      "simple": "z-ai/glm-4.7-flash",
-      "medium": "z-ai/glm-4.7",
-      "complex": "z-ai/glm-5"
+  "version": "2.0.0",
+  "description": "Parallel AI agent router with intelligent task classification and API detection",
+  "architecture": "parallel",
+  "providers": {
+    "zhipu": {
+      "name": "Zhipu AI",
+      "envKey": "ZAI_API_KEY",
+      "fast": "zhipu/glm-4-flash",
+      "smart": "zai/glm-5",
+      "priority": 1
     },
-    "fallback": "inception/mercury-2"
-  },
-  "complexity_thresholds": {
-    "simple": {
-      "max_tokens": 500,
-      "keywords": ["define", "what is", "list", "convert", "format", "simple"],
-      "max_steps": 1
+    "google": {
+      "name": "Google AI",
+      "envKey": "GOOGLE_API_KEY",
+      "fast": "gemini-2.0-flash-exp",
+      "smart": "gemini-exp-1206",
+      "priority": 2
     },
-    "medium": {
-      "max_tokens": 2000,
-      "keywords": ["explain", "compare", "analyze", "summarize", "review"],
-      "max_steps": 3
+    "anthropic": {
+      "name": "Anthropic",
+      "envKey": "ANTHROPIC_API_KEY",
+      "fast": "claude-3-5-haiku-20241022",
+      "smart": "claude-3-5-sonnet-20241022",
+      "priority": 3
     },
-    "complex": {
-      "max_tokens": 4000,
-      "keywords": ["create", "build", "design", "implement", "architect", "refactor"],
-      "max_steps": 10
+    "openrouter": {
+      "name": "OpenRouter",
+      "envKey": "OPENROUTER_API_KEY",
+      "fast": "inception/mercury-2",
+      "smart": "zai/glm-5",
+      "priority": 4
     }
   },
-  "routing": {
-    "max_retries": 3,
-    "timeout_ms": 60000,
-    "fallback_model": "z-ai/glm-4.7-flash"
+  "execution": {
+    "mode": "parallel",
+    "fastAgent": {
+      "description": "Immediate streaming response",
+      "maxTokens": 2048,
+      "temperature": 0.7,
+      "streaming": true
+    },
+    "smartAgent": {
+      "description": "Orchestration and comprehensive synthesis",
+      "maxTokens": 4096,
+      "temperature": 0.9,
+      "streaming": true,
+      "maxSubtasks": 4
+    }
+  },
+  "complexity": {
+    "simple": {
+      "maxTokens": 500,
+      "subtasks": 0,
+      "keywords": ["define", "what is", "list", "convert", "format"]
+    },
+    "medium": {
+      "maxTokens": 2000,
+      "subtasks": 2,
+      "keywords": ["explain", "compare", "analyze", "summarize"]
+    },
+    "complex": {
+      "maxTokens": 4000,
+      "subtasks": 3,
+      "keywords": ["create", "build", "design", "implement"]
+    },
+    "very_complex": {
+      "maxTokens": 8000,
+      "subtasks": 4,
+      "keywords": ["architect", "refactor", "comprehensive", "multi-step"]
+    }
   },
   "logging": {
     "level": "info",
-    "include_metadata": true
+    "includeMetadata": true,
+    "showProgress": true
   }
 }
