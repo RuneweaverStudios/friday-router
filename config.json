@@ -1,0 +1,40 @@
+{
+  "name": "friday-router",
+  "version": "1.0.0",
+  "description": "Multi-model routing agent with intelligent task classification",
+  "models": {
+    "triage": "z-ai/glm-4.7-flash",
+    "orchestrator": "z-ai/glm-5",
+    "agents": {
+      "simple": "z-ai/glm-4.7-flash",
+      "medium": "z-ai/glm-4.7",
+      "complex": "z-ai/glm-5"
+    }
+  },
+  "complexity_thresholds": {
+    "simple": {
+      "max_tokens": 500,
+      "keywords": ["define", "what is", "list", "convert", "format", "simple"],
+      "max_steps": 1
+    },
+    "medium": {
+      "max_tokens": 2000,
+      "keywords": ["explain", "compare", "analyze", "summarize", "review"],
+      "max_steps": 3
+    },
+    "complex": {
+      "max_tokens": 4000,
+      "keywords": ["create", "build", "design", "implement", "architect", "refactor"],
+      "max_steps": 10
+    }
+  },
+  "routing": {
+    "max_retries": 3,
+    "timeout_ms": 60000,
+    "fallback_model": "z-ai/glm-4.7-flash"
+  },
+  "logging": {
+    "level": "info",
+    "include_metadata": true
+  }
+}
