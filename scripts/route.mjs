@@ -43,6 +43,7 @@ const API_URL = 'https://openrouter.ai/api/v1/chat/completions';
 const TRIAGE_MODEL = process.env.TRIAGE_MODEL || 'z-ai/glm-4.7-flash';
 const ORCHESTRATOR_MODEL = process.env.ORCHESTRATOR_MODEL || 'z-ai/glm-5';
 const DISPATCH_MODEL = process.env.DISPATCH_MODEL || 'z-ai/glm-5';
+const FALLBACK_MODEL = process.env.FALLBACK_MODEL || 'inception/mercury-2';
 
 // ─── Inline helpers (avoids subprocess overhead) ──────────────────────────────
 
@@ -80,6 +81,16 @@ async function openRouterCall(model, messages, options = {}) {
 
   if (!response.ok) {
     const err = await response.text();
+    
+    // Rate limit handling - retry with fallback model
+    if (response.status === 429 && model !== FALLBACK_MODEL && !options.noFallback) {
+      if (options.debug) {
+        console.error(`⚠️ Rate limit hit on ${model}, falling back to ${FALLBACK_MODEL}`);
+      }
+      // Retry with fallback model
+      return openRouterCall(FALLBACK_MODEL, messages, { ...options, noFallback: true });
+    }
+    
     throw new Error(`API error (${response.status}): ${err}`);
   }
 

@@ -54,6 +54,7 @@ Optional `--follow-up` flag generates contextual follow-up questions based on:
 - **Simple Tasks**: `z-ai/glm-4.7-flash` - Quick responses
 - **Medium Tasks**: `z-ai/glm-4.7` - Balanced performance
 - **Complex Tasks**: `z-ai/glm-5` - Maximum capability
+- **Fallback**: `inception/mercury-2` - Used on rate limits (429)
 
 ## Task Complexity Classification
 
@@ -175,7 +176,7 @@ All responses include:
 ## Error Handling
 
 - **Automatic retries**: Up to 3 attempts with exponential backoff
-- **Fallback model**: If preferred model fails, uses GLM 4 Flash
+- **Fallback model**: If rate limited (429), automatically switches to `inception/mercury-2`
 - **Timeout protection**: 60s max per request
 - **Error metadata**: Full error details in response
 
