@@ -49,7 +49,7 @@ Optional `--follow-up` flag generates contextual follow-up questions based on:
 
 ## Models Used
 
-- **Triage**: `z-ai/glm-4.7-flash` - Ultra-fast classification
+- **Triage**: `inception/mercury-2` - Ultra-fast, free classification
 - **Orchestrator**: `z-ai/glm-5` - Smart routing decisions
 - **Simple Tasks**: `z-ai/glm-4.7-flash` - Quick responses
 - **Medium Tasks**: `z-ai/glm-4.7` - Balanced performance

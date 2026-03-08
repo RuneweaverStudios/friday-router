@@ -12,7 +12,7 @@ const openRouter = new Anthropic({
   baseURL: 'https://openrouter.ai/api/v1',
 });
 
-const TRIAGE_MODEL = 'z-ai/glm-4.7-flash';
+const TRIAGE_MODEL = 'inception/mercury-2';
 
 const TRIAGE_PROMPT = `You are a task complexity classifier. Analyze the task and classify it as simple, medium, or complex.
 

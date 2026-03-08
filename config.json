@@ -1,9 +1,9 @@
 {
   "name": "friday-router",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Multi-model routing agent with intelligent task classification and fallback support",
   "models": {
-    "triage": "z-ai/glm-4.7-flash",
+    "triage": "inception/mercury-2",
     "orchestrator": "z-ai/glm-5",
     "agents": {
       "simple": "z-ai/glm-4.7-flash",

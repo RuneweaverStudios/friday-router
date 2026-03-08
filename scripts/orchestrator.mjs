@@ -36,7 +36,7 @@ const ORCHESTRATOR_PROMPT = `You are a routing orchestrator. Based on the task c
 Complexity level: {complexity}
 
 Available models:
-- simple: z-ai/glm-4.7-flash (fast, cheap, good for basic tasks)
+- simple: inception/mercury-2 (fast, free, good for basic tasks)
 - medium: z-ai/glm-4.7 (balanced performance)
 - complex: z-ai/glm-5 (most capable, handles complex reasoning)
 

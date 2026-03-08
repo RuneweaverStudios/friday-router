@@ -27,7 +27,7 @@
  *
  * Environment:
  *   OPENROUTER_API_KEY    Required
- *   TRIAGE_MODEL          GLM 4.7 Flash model (default: z-ai/glm-4.7-flash)
+ *   TRIAGE_MODEL          Fast triage model (default: inception/mercury-2)
  *   ORCHESTRATOR_MODEL    GLM 5 model (default: z-ai/glm-5)
  *   DISPATCH_MODEL        Sub-agent model (default: z-ai/glm-5)
  */
@@ -40,7 +40,7 @@ import { fileURLToPath } from 'url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const API_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
-const TRIAGE_MODEL = process.env.TRIAGE_MODEL || 'z-ai/glm-4.7-flash';
+const TRIAGE_MODEL = process.env.TRIAGE_MODEL || 'inception/mercury-2';
 const ORCHESTRATOR_MODEL = process.env.ORCHESTRATOR_MODEL || 'z-ai/glm-5';
 const DISPATCH_MODEL = process.env.DISPATCH_MODEL || 'z-ai/glm-5';
 const FALLBACK_MODEL = process.env.FALLBACK_MODEL || 'inception/mercury-2';
