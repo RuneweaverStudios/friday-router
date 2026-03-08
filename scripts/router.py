@@ -134,19 +134,10 @@ class FridayRouter:
         tier_scores['CODE'] = self._keyword_match(task_description, self.CODE_KEYWORDS)
         tier_scores['COMPLEX'] = self._keyword_match(task_description, self.COMPLEX_KEYWORDS)
         
-        # Check for vision keywords (highest priority - if image/picture/photo/screenshot present, force VISION)
+        # Check for vision keywords
         vision_keywords = ['image', 'picture', 'photo', 'screenshot', 'visual', 'see', 'describe what']
         vision_matches = self._keyword_match(task_description, vision_keywords)
         tier_scores['VISION'] = vision_matches
-        
-        # If vision keywords present, this IS a vision task - override other classifications
-        if vision_matches > 0:
-            return {
-                'tier': 'VISION',
-                'confidence': min(vision_matches / 3.0, 1.0),
-                'tier_scores': {'VISION': vision_matches},
-                'is_agentic': False
-            }
         
         # Agentic task detection - if multi-step, bump to at least CODE
         agentic_count = self._keyword_match(task_description, self.AGENTIC_KEYWORDS)
@@ -346,11 +337,12 @@ def main():
     command = sys.argv[1]
     router = FridayRouter()
     
-    # Parse --json for spawn command
+    # Parse --json for spawn command (use a copy to avoid mutating sys.argv)
     output_json = False
-    if command == 'spawn' and len(sys.argv) > 2 and sys.argv[2] == '--json':
+    argv = list(sys.argv)
+    if command == 'spawn' and len(argv) > 2 and argv[2] == '--json':
         output_json = True
-        sys.argv.pop(2)  # remove --json so task = ' '.join(sys.argv[2:])
+        argv.pop(2)  # remove --json so task = ' '.join(argv[2:])
     
     if command == 'default':
         m = router.get_default_model()
@@ -362,45 +354,45 @@ def main():
         print(f"   Cost: ${m['input_cost_per_m']}/${m['output_cost_per_m']} per M")
         print(f"   Use for: {', '.join(m.get('use_for', []))}")
         print("\n   Simple tasks down-route to FAST tier (e.g. Gemini 2.5 Flash).")
-    
+
     elif command == 'classify':
-        task = ' '.join(sys.argv[2:])
+        task = ' '.join(argv[2:])
         result = router.recommend_model(task)
-        
+
         print(f"📋 Task: {task}")
         print(f"\n🎯 Classification: {result['tier']}")
         print(f"   Confidence: {result['classification']['confidence']:.1%}")
         print(f"   Reasoning: {result['reasoning']}")
-        
+
         if result['model']:
             m = result['model']
             print(f"\n🤖 Recommended Model:")
             print(f"   {m['alias']} ({m['id']})")
             print(f"   Cost: ${m['input_cost_per_m']}/${m['output_cost_per_m']} per M")
             print(f"   Use for: {', '.join(m.get('use_for', []))}")
-        
+
         if result['fallback']:
             fb = result['fallback']
             print(f"\n🔄 Fallback: {fb['alias']} ({fb['id']})")
-    
+
     elif command == 'score':
-        task = ' '.join(sys.argv[2:])
+        task = ' '.join(argv[2:])
         result = router.classify_task(task, return_details=True)
-        
+
         print(f"📋 Task: {task}")
         print(f"\n🎯 Tier: {result['tier']}")
         print(f"   Confidence: {result['confidence']:.1%}")
         print(f"   Agentic: {'Yes' if result['is_agentic'] else 'No'}")
-        
+
         print(f"\n📊 Tier Scores:")
         for tier, score in sorted(result['tier_scores'].items(), key=lambda x: x[1], reverse=True):
             bar = '█' * score
             print(f"   {tier:10} {bar} ({score})")
-    
+
     elif command == 'cost':
-        task = ' '.join(sys.argv[2:])
+        task = ' '.join(argv[2:])
         result = router.estimate_cost(task)
-        
+
         if 'error' in result:
             print(f"❌ Error: {result['error']}")
         else:
@@ -409,15 +401,15 @@ def main():
             print(f"   Tier: {result['tier']}")
             print(f"   Model: {result['model']}")
             print(f"   Est. Cost: ${result['cost']} {result['currency']}")
-    
+
     elif command == 'models':
         print("📦 Configured Models:\n")
         for model in router.config.get('models', []):
             print(f"  {model['alias']:20} [{model['tier']:8}] {model['id']}")
             print(f"                         ${model['input_cost_per_m']}/${model['output_cost_per_m']}/M")
-    
+
     elif command == 'spawn':
-        task = ' '.join(sys.argv[2:])
+        task = ' '.join(argv[2:])
         if not task:
             print("❌ Error: spawn requires a task string", file=sys.stderr)
             sys.exit(1)
